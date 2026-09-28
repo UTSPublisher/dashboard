@@ -57,7 +57,7 @@
       margin-top: 4px;
     }
 
-    /* Filters Section */
+    /* Controls Bar */
     .controls-card {
       background: var(--card-bg);
       padding: 16px 20px;
@@ -106,7 +106,7 @@
       transform: translateY(-50%);
       color: var(--text-muted);
       cursor: pointer;
-      display: none; /* Toggled dynamically via JS */
+      display: none;
       background: none;
       border: none;
       font-size: 0.9rem;
@@ -370,7 +370,7 @@
   <div class="controls-card">
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass fa-search"></i>
-      <input type="text" id="search-input" placeholder="Search by title, author, or buyer...">
+      <input type="text" id="search-input" placeholder="Search title, buyer, reference, country...">
       <button class="clear-btn" id="clear-search-btn" title="Clear Search">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -390,21 +390,21 @@
     <div class="kpi-card">
       <div class="kpi-icon"><i class="fa-solid fa-dollar-sign"></i></div>
       <div class="kpi-details">
-        <span>Total Revenue</span>
+        <span>Total Sales Revenue</span>
         <h3 id="kpi-revenue">RM 0.00</h3>
       </div>
     </div>
     <div class="kpi-card">
       <div class="kpi-icon"><i class="fa-solid fa-book"></i></div>
       <div class="kpi-details">
-        <span>Copies Sold</span>
+        <span>Total Copies Sold</span>
         <h3 id="kpi-copies">0</h3>
       </div>
     </div>
     <div class="kpi-card">
       <div class="kpi-icon"><i class="fa-solid fa-receipt"></i></div>
       <div class="kpi-details">
-        <span>Transactions</span>
+        <span>Total Transactions</span>
         <h3 id="kpi-transactions">0</h3>
       </div>
     </div>
@@ -420,13 +420,13 @@
   <!-- Charts -->
   <div class="charts-grid">
     <div class="chart-card">
-      <h2>Sales & Volume Performance</h2>
+      <h2>Revenue & Quantity Sold by Year</h2>
       <div class="chart-container">
         <canvas id="salesTimelineChart"></canvas>
       </div>
     </div>
     <div class="chart-card">
-      <h2>Customer Type Distribution</h2>
+      <h2>Sales by Customer Type</h2>
       <div class="chart-container">
         <canvas id="customerChart"></canvas>
       </div>
@@ -452,7 +452,6 @@
   </div>
 
   <script>
-    // Replace this URL with your published Google Apps Script Web App Endpoint
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx7hCwlPq2CDdNTmjcvqTfEmpW_x-hM47n_OS9YDyukqMh9Yd8EhjOtrxX1dq-bKNUx/exec";
 
     let rawSalesData = [];
@@ -460,38 +459,35 @@
     let salesChartInstance = null;
     let customerChartInstance = null;
 
-    // --- 1. Helper Functions ---
-    
-    /**
-     * Robustly parses various date formats into standard Date objects.
-     */
+    // Helper: Safely retrieve row value by checking multiple potential lower-case header names
+    function getVal(item, keys, fallback = '') {
+      for (let k of keys) {
+        if (item[k] !== undefined && item[k] !== null && item[k] !== '') {
+          return item[k];
+        }
+      }
+      return fallback;
+    }
+
     function parseDate(dateStr) {
       if (!dateStr) return new Date(0);
       if (dateStr instanceof Date) return dateStr;
-
       const str = String(dateStr).trim();
 
-      // Standard YYYY-MM-DD or ISO formats
       if (str.match(/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/)) {
         const parsed = new Date(str);
         if (!isNaN(parsed)) return parsed;
       }
 
-      // DD/MM/YYYY or MM/DD/YYYY formats
       const parts = str.split(/[-/.]/);
       if (parts.length === 3) {
         let day, month, year;
         if (parts[0].length === 4) {
-          // YYYY-MM-DD
           [year, month, day] = parts.map(Number);
         } else if (parts[2].length === 4) {
-          // Assume DD/MM/YYYY
           [day, month, year] = parts.map(Number);
         }
-
-        if (year && month && day) {
-          return new Date(year, month - 1, day);
-        }
+        if (year && month && day) return new Date(year, month - 1, day);
       }
 
       const fallback = new Date(str);
@@ -502,27 +498,33 @@
       return 'RM ' + Number(val || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // --- 2. Data Fetching & Processing ---
     async function fetchSalesData() {
       try {
         const response = await fetch(WEB_APP_URL);
         const data = await response.json();
         
-        // Map and sanitize row data
-        rawSalesData = data.map(item => ({
-          dateOfPurchase: item.dateOfPurchase || item.date || '',
-          parsedDate: parseDate(item.dateOfPurchase || item.date || ''),
-          bookTitle: item.bookTitle || 'Untitled',
-          author: item.author || 'Unknown Author',
-          category: item.category || 'General',
-          customerType: item.customerType || 'Individual',
-          buyerName: item.buyerName || 'N/A',
-          quantity: Number(item.quantity) || 0,
-          costPerUnit: Number(item.costPerUnit) || 0,
-          retailPrice: Number(item.retailPrice) || 0,
-          totalSalesValue: Number(item.totalSalesValue) || 0,
-          totalRevenue: Number(item.totalRevenue) || (Number(item.quantity || 0) * Number(item.retailPrice || 0))
-        }));
+        // Exact mapping to match lowercase headers from your Apps Script!
+        rawSalesData = data.map(item => {
+          const dateStr = getVal(item, ['date of purchase', 'date', 'purchase date']);
+          const yrVal = parseInt(getVal(item, ['year'])) || (parseDate(dateStr).getFullYear() || 'N/A');
+
+          return {
+            year: yrVal,
+            dateOfPurchase: dateStr || 'N/A',
+            parsedDate: parseDate(dateStr),
+            reference: getVal(item, ['reference', 'ref'], 'N/A'),
+            buyerName: getVal(item, ['book buyer', 'buyer', 'customer'], 'Unknown Buyer'),
+            customerType: getVal(item, ['customer type', 'type'], 'General'),
+            countryOfOrigin: getVal(item, ['country of origin', 'country'], 'Malaysia'),
+            category: getVal(item, ['category', 'cat'], 'General'),
+            bookTitle: getVal(item, ['book title', 'title'], 'Untitled'),
+            quantity: parseInt(getVal(item, ['quantity', 'qty'], 0)) || 0,
+            actualCostPerUnit: parseFloat(getVal(item, ['actual cost per unit (rm)', 'actual cost'], 0)) || 0,
+            retailPrice: parseFloat(getVal(item, ['retail price (rm)', 'retail price'], 0)) || 0,
+            totalSales: parseFloat(getVal(item, ['total sales (rm)', 'total sales'], 0)) || 0,
+            totalRevenue: parseFloat(getVal(item, ['total revenue (rm)', 'total revenue', 'revenue'], 0)) || 0
+          };
+        });
 
         populateFilterOptions();
         filterData();
@@ -530,30 +532,26 @@
         console.error("Error fetching data:", err);
         document.getElementById('sales-grid').innerHTML = `
           <div class="loading-spinner" style="color: #ef4444;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load sales data. Please check Web App URL & permissions.
+            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load sales data.
           </div>`;
       }
     }
 
-    // --- 3. Filter Population & Execution ---
     function populateFilterOptions() {
       const yearSelect = document.getElementById('year-filter');
       const categorySelect = document.getElementById('category-filter');
 
-      const years = new Set();
-      const categories = new Set();
+      yearSelect.innerHTML = '<option value="ALL">All Years</option>';
+      categorySelect.innerHTML = '<option value="ALL">All Categories</option>';
 
-      rawSalesData.forEach(item => {
-        const yr = item.parsedDate.getFullYear();
-        if (yr && yr !== 1970) years.add(yr);
-        if (item.category) categories.add(item.category);
-      });
+      const years = [...new Set(rawSalesData.map(b => b.year))].filter(y => y !== 'N/A' && !isNaN(y)).sort((a,b) => b - a);
+      const categories = [...new Set(rawSalesData.map(b => b.category))].sort();
 
-      Array.from(years).sort((a,b) => b - a).forEach(yr => {
+      years.forEach(yr => {
         yearSelect.innerHTML += `<option value="${yr}">${yr}</option>`;
       });
 
-      Array.from(categories).sort().forEach(cat => {
+      categories.forEach(cat => {
         categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
       });
     }
@@ -566,19 +564,16 @@
       filteredSalesData = rawSalesData.filter(item => {
         const matchesQuery = 
           item.bookTitle.toLowerCase().includes(query) ||
-          item.author.toLowerCase().includes(query) ||
-          item.buyerName.toLowerCase().includes(query);
+          item.buyerName.toLowerCase().includes(query) ||
+          item.reference.toLowerCase().includes(query) ||
+          item.countryOfOrigin.toLowerCase().includes(query);
 
-        const matchesYear = (selectedYear === 'ALL') || 
-          (item.parsedDate.getFullYear().toString() === selectedYear);
-
-        const matchesCategory = (selectedCategory === 'ALL') || 
-          (item.category === selectedCategory);
+        const matchesYear = (selectedYear === 'ALL') || (item.year.toString() === selectedYear);
+        const matchesCategory = (selectedCategory === 'ALL') || (item.category === selectedCategory);
 
         return matchesQuery && matchesYear && matchesCategory;
       });
 
-      // Sort by date descending for display
       filteredSalesData.sort((a, b) => b.parsedDate - a.parsedDate);
 
       updateKPIs();
@@ -586,72 +581,51 @@
       renderSalesGrid();
     }
 
-    // --- 4. Render Components ---
     function updateKPIs() {
-      let totalRevenue = 0;
-      let totalCopies = 0;
-      const categoryMap = {};
+      let totalRev = 0;
+      let totalQty = 0;
+      const catCounts = {};
 
       filteredSalesData.forEach(item => {
-        totalRevenue += item.totalRevenue;
-        totalCopies += item.quantity;
-        categoryMap[item.category] = (categoryMap[item.category] || 0) + item.totalRevenue;
+        totalRev += item.totalRevenue;
+        totalQty += item.quantity;
+        catCounts[item.category] = (catCounts[item.category] || 0) + item.totalRevenue;
       });
 
-      let topCategory = '-';
+      let topCat = '-';
       let maxRev = 0;
-      Object.keys(categoryMap).forEach(cat => {
-        if (categoryMap[cat] > maxRev) {
-          maxRev = categoryMap[cat];
-          topCategory = cat;
-        }
-      });
+      for (const [cat, rev] of Object.entries(catCounts)) {
+        if (rev > maxRev) { maxRev = rev; topCat = cat; }
+      }
 
-      document.getElementById('kpi-revenue').innerText = formatCurrency(totalRevenue);
-      document.getElementById('kpi-copies').innerText = totalCopies.toLocaleString();
+      document.getElementById('kpi-revenue').innerText = formatCurrency(totalRev);
+      document.getElementById('kpi-copies').innerText = totalQty.toLocaleString();
       document.getElementById('kpi-transactions').innerText = filteredSalesData.length.toLocaleString();
-      document.getElementById('kpi-top-category').innerText = topCategory;
+      document.getElementById('kpi-top-category').innerText = topCat;
     }
 
     function renderCharts() {
-      // 1. Sales Performance Timeline Grouping by Year/Month
-      const timeMap = {};
+      const yearStats = {};
       filteredSalesData.forEach(item => {
-        const key = item.parsedDate.getFullYear() !== 1970 
-          ? `${item.parsedDate.getFullYear()}-${String(item.parsedDate.getMonth() + 1).padStart(2, '0')}`
-          : 'Unknown';
-        
-        if (!timeMap[key]) timeMap[key] = { revenue: 0, quantity: 0 };
-        timeMap[key].revenue += item.totalRevenue;
-        timeMap[key].quantity += item.quantity;
+        if (item.year === 'N/A' || !item.year) return;
+        if (!yearStats[item.year]) yearStats[item.year] = { rev: 0, qty: 0 };
+        yearStats[item.year].rev += item.totalRevenue;
+        yearStats[item.year].qty += item.quantity;
       });
 
-      const sortedTimeKeys = Object.keys(timeMap).sort();
-      const timelineLabels = sortedTimeKeys;
-      const revenueData = sortedTimeKeys.map(k => timeMap[k].revenue);
-      const quantityData = sortedTimeKeys.map(k => timeMap[k].quantity);
+      const years = Object.keys(yearStats).sort((a,b) => a - b);
+      const revData = years.map(y => yearStats[y].rev);
+      const qtyData = years.map(y => yearStats[y].qty);
 
       if (salesChartInstance) salesChartInstance.destroy();
       const ctxSales = document.getElementById('salesTimelineChart').getContext('2d');
       salesChartInstance = new Chart(ctxSales, {
         type: 'bar',
         data: {
-          labels: timelineLabels,
+          labels: years,
           datasets: [
-            {
-              label: 'Revenue (RM)',
-              data: revenueData,
-              backgroundColor: '#2563eb',
-              yAxisID: 'y'
-            },
-            {
-              label: 'Copies Sold',
-              data: quantityData,
-              type: 'line',
-              borderColor: '#f59e0b',
-              backgroundColor: '#f59e0b',
-              yAxisID: 'y1'
-            }
+            { label: 'Revenue (RM)', data: revData, backgroundColor: '#2563eb', yAxisID: 'y' },
+            { label: 'Quantity Sold', data: qtyData, type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1' }
           ]
         },
         options: {
@@ -664,10 +638,9 @@
         }
       });
 
-      // 2. Customer Type Breakdown
-      const customerMap = {};
+      const custStats = {};
       filteredSalesData.forEach(item => {
-        customerMap[item.customerType] = (customerMap[item.customerType] || 0) + item.totalRevenue;
+        custStats[item.customerType] = (custStats[item.customerType] || 0) + 1;
       });
 
       if (customerChartInstance) customerChartInstance.destroy();
@@ -675,10 +648,10 @@
       customerChartInstance = new Chart(ctxCustomer, {
         type: 'doughnut',
         data: {
-          labels: Object.keys(customerMap),
+          labels: Object.keys(custStats),
           datasets: [{
-            data: Object.values(customerMap),
-            backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+            data: Object.values(custStats),
+            backgroundColor: ['#2563eb', '#f59e0b', '#38bdf8', '#10b981', '#8b5cf6']
           }]
         },
         options: {
@@ -704,9 +677,10 @@
               <span class="badge">${item.category}</span>
             </div>
             <div class="card-body">
-              <div><i class="fa-regular fa-user"></i> ${item.author}</div>
-              <div><i class="fa-solid fa-building"></i> ${item.buyerName} (${item.customerType})</div>
-              <div><i class="fa-regular fa-calendar"></i> ${item.parsedDate.toLocaleDateString() || item.dateOfPurchase}</div>
+              <div><i class="fa-solid fa-hashtag"></i> Ref: ${item.reference}</div>
+              <div><i class="fa-solid fa-user"></i> Buyer: <strong>${item.buyerName}</strong></div>
+              <div><i class="fa-solid fa-globe"></i> ${item.countryOfOrigin} (${item.customerType})</div>
+              <div><i class="fa-regular fa-calendar"></i> ${item.dateOfPurchase}</div>
             </div>
           </div>
           <div class="card-footer">
@@ -717,42 +691,37 @@
       `).join('');
     }
 
-    // --- 5. Modal Display ---
     function openModal(index) {
       const item = filteredSalesData[index];
       if (!item) return;
 
       document.getElementById('modal-title').innerText = item.bookTitle;
       document.getElementById('modal-content').innerHTML = `
-        <div class="modal-body-row"><span>Author</span><span>${item.author}</span></div>
-        <div class="modal-body-row"><span>Category</span><span>${item.category}</span></div>
-        <div class="modal-body-row"><span>Buyer Name</span><span>${item.buyerName}</span></div>
+        <div class="modal-body-row"><span>Reference</span><span>${item.reference}</span></div>
+        <div class="modal-body-row"><span>Date of Purchase</span><span>${item.dateOfPurchase}</span></div>
+        <div class="modal-body-row"><span>Book Buyer</span><span>${item.buyerName}</span></div>
         <div class="modal-body-row"><span>Customer Type</span><span>${item.customerType}</span></div>
-        <div class="modal-body-row"><span>Date of Purchase</span><span>${item.parsedDate.toLocaleDateString()}</span></div>
-        <div class="modal-body-row"><span>Quantity Sold</span><span>${item.quantity}</span></div>
-        <div class="modal-body-row"><span>Cost Per Unit</span><span>${formatCurrency(item.costPerUnit)}</span></div>
-        <div class="modal-body-row"><span>Retail Price</span><span>${formatCurrency(item.retailPrice)}</span></div>
-        <div class="modal-body-row"><span>Total Sales Value</span><span>${formatCurrency(item.totalSalesValue)}</span></div>
+        <div class="modal-body-row"><span>Country of Origin</span><span>${item.countryOfOrigin}</span></div>
+        <div class="modal-body-row"><span>Category</span><span>${item.category}</span></div>
+        <div class="modal-body-row"><span>Quantity Sold</span><span>${item.quantity} units</span></div>
+        <div class="modal-body-row"><span>Actual Cost / Unit</span><span>${formatCurrency(item.actualCostPerUnit)}</span></div>
+        <div class="modal-body-row"><span>Retail Price / Unit</span><span>${formatCurrency(item.retailPrice)}</span></div>
+        <div class="modal-body-row"><span>Total Sales</span><span>${formatCurrency(item.totalSales)}</span></div>
         <div class="modal-body-row"><span>Total Revenue</span><span style="color: var(--primary);">${formatCurrency(item.totalRevenue)}</span></div>
       `;
 
       document.getElementById('sale-modal').classList.add('active');
     }
 
-    // --- 6. Event Listeners ---
     document.addEventListener('DOMContentLoaded', () => {
       const searchInput = document.getElementById('search-input');
       const clearBtn = document.getElementById('clear-search-btn');
 
-      // Toggle clear button & trigger filtering on search input
       searchInput.addEventListener('input', (e) => {
-        if (clearBtn) {
-          clearBtn.style.display = e.target.value.trim() ? 'block' : 'none';
-        }
+        if (clearBtn) clearBtn.style.display = e.target.value.trim() ? 'block' : 'none';
         filterData();
       });
 
-      // Clear input event listener
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
           searchInput.value = '';
@@ -762,23 +731,19 @@
         });
       }
 
-      // Filter select listeners
       document.getElementById('year-filter').addEventListener('change', filterData);
       document.getElementById('category-filter').addEventListener('change', filterData);
 
-      // Modal close listener
       document.getElementById('modal-close-btn').addEventListener('click', () => {
         document.getElementById('sale-modal').classList.remove('active');
       });
 
-      // Close modal on background overlay click
       document.getElementById('sale-modal').addEventListener('click', (e) => {
         if (e.target.id === 'sale-modal') {
           document.getElementById('sale-modal').classList.remove('active');
         }
       });
 
-      // Fetch initial data
       fetchSalesData();
     });
   </script>
