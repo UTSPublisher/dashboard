@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UTS Publisher — Sales Dashboard</title>
+  <!-- Chart.js Library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --navy-dark: #0f172a;
+      --blue-primary: #2f2e7a;
+      --blue-light: #72c0e8;
+      --orange-vibrant: #f47820;
+      --orange-hover: #d96716;
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --book-card-bg: #eef6fc;
+      --book-card-hover: #e2f0fd;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #cbd5e1;
+      --accent-glow: rgba(47, 46, 122, 0.12);
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-dark);
+      font-family: var(--font);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 2rem;
+      gap: 1rem;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-logo {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      color: var(--blue-primary);
+      letter-spacing: -0.025em;
+      font-weight: 700;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      background: rgba(114, 192, 232, 0.15);
+      color: var(--blue-primary);
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid rgba(47, 46, 122, 0.2);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 6px #10b981;
+    }
+
+    /* Metric Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-top: 4px solid var(--blue-primary);
+      padding: 1.25rem;
+      border-radius: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-3px);
+      border-top-color: var(--orange-vibrant);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .metric-card small {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .metric-card strong {
+      font-size: 1.8rem;
+      color: var(--blue-primary);
+      line-height: 1.1;
+    }
+
+    /* Charts Section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 850px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-radius: 0.85rem;
+      padding: 1.25rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      margin-bottom: 1rem;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 260px;
+      width: 100%;
+    }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    input, select {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      color: var(--text-dark);
+      padding: 0.65rem 1rem;
+      border-radius: 0.6rem;
+      outline: none;
+      font-size: 0.9rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding-right: 2.5rem;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--blue-primary);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .clear-btn {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: none;
+    }
+
+    .reset-filters-btn {
+      background: #ffffff;
+      border: 1.5px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.65rem 1rem;
+      border-radius: 0.6rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .reset-filters-btn:hover {
+      color: var(--orange-vibrant);
+      border-color: var(--orange-vibrant);
+      background: rgba(244, 120, 32, 0.05);
+    }
+
+    /* Grid Layout for Sales Cards */
+    .sales-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .sale-card {
+      background: var(--book-card-bg);
+      border: 1.5px solid var(--border-color);
+      border-top: 4px solid var(--blue-primary);
+      border-radius: 0.85rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .sale-card:hover {
+      background: var(--book-card-hover);
+      transform: translateY(-3px);
+      border-top-color: var(--orange-vibrant);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .sale-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .sale-ref {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--blue-primary);
+    }
+
+    .sale-date {
+      font-size: 0.75rem;
+      background: #ffffff;
+      color: var(--navy-dark);
+      padding: 0.15rem 0.55rem;
+      border-radius: 0.3rem;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+    }
+
+    .sale-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy-dark);
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+      cursor: pointer;
+    }
+
+    .sale-title:hover {
+      color: var(--orange-vibrant);
+      text-decoration: underline;
+    }
+
+    .sale-buyer {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.25rem;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .sale-financials {
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.75rem;
+      margin-top: 0.75rem;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .fin-item span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .fin-item strong {
+      color: var(--navy-dark);
+      font-size: 0.95rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+
+    .modal-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-top: 4px solid var(--orange-vibrant);
+      border-radius: 0.85rem;
+      width: 100%;
+      max-width: 550px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.75rem;
+    }
+
+    .modal-close-btn {
+      background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);
+    }
+
+    .modal-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px dashed var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="header-brand">
+        <img src="../logo.png?v=2" alt="UTS Logo" class="header-logo" onerror="this.style.display='none'">
+        <div>
+          <h1>UTS Publisher Sales Dashboard</h1>
+          <p>Book Sales, Revenue & Category Tracking</p>
+        </div>
+      </div>
+      <span class="badge">Live Sales Dataset</span>
+    </header>
+
+    <!-- Top KPI Cards -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <small>Total Sales Revenue</small>
+        <strong id="total-revenue">RM 0.00</strong>
+      </div>
+      <div class="metric-card">
+        <small>Total Copies Sold</small>
+        <strong id="total-quantity">0</strong>
+      </div>
+      <div class="metric-card">
+        <small>Total Transactions</small>
+        <strong id="total-transactions">0</strong>
+      </div>
+      <div class="metric-card">
+        <small>Top Category</small>
+        <strong id="top-category" style="font-size: 1.1rem; padding-top: 0.4rem;">-</strong>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="charts-grid">
+      <div class="chart-card">
+        <h3>Revenue & Quantity Sold by Year</h3>
+        <div class="chart-container">
+          <canvas id="salesTimelineChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Sales by Customer Type</h3>
+        <div class="chart-container">
+          <canvas id="customerChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls Bar -->
+    <div class="controls">
+      <div class="search-wrapper">
+        <input type="text" id="search-input" placeholder="Search title, buyer, reference, country...">
+        <button class="clear-btn" id="clear-search-btn" onclick="clearSearch()">&times;</button>
+      </div>
+      <select id="year-filter">
+        <option value="ALL">All Years</option>
+      </select>
+      <select id="category-filter">
+        <option value="ALL">All Categories</option>
+      </select>
+      <select id="sort-filter">
+        <option value="NEWEST">Newest First</option>
+        <option value="OLDEST">Oldest First</option>
+        <option value="REV_DESC">Highest Revenue</option>
+        <option value="QTY_DESC">Highest Quantity</option>
+      </select>
+      <button class="reset-filters-btn" onclick="resetAllFilters()">Reset Filters</button>
+    </div>
+
+    <!-- Output Grid -->
+    <div class="sales-grid" id="sales-container"></div>
+
+    <footer>
+      <p>UTS Publisher &bull; University of Technology Sarawak</p>
+    </footer>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="sale-modal" onclick="closeModal(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 style="font-size: 1.1rem; color: var(--navy-dark);" id="modal-title">Transaction Details</h2>
+        <button class="modal-close-btn" onclick="hideModal()">&times;</button>
+      </div>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx7hCwlPq2CDdNTmjcvqTfEmpW_x-hM47n_OS9YDyukqMh9Yd8EhjOtrxX1dq-bKNUx/exec";
+
+    let rawData = [];
+    let filteredData = [];
+    let salesChart = null;
+    let customerChart = null;
+
+    async function loadSalesData() {
+      const container = document.getElementById('sales-container');
+      container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem 0;">Loading live sales data...</p>`;
+
+      try {
+        const response = await fetch(WEB_APP_URL);
+        const data = await response.json();
+
+        if (!data || data.length === 0) {
+          container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem 0;">No sales records found.</p>`;
+          return;
+        }
+
+        rawData = data.map((item, index) => ({
+          id: index,
+          year: parseInt(item["year"]) || 'N/A',
+          dateOfPurchase: item["date of purchase"] || 'N/A',
+          reference: item["reference"] || 'N/A',
+          bookBuyer: item["book buyer"] || 'Unknown Buyer',
+          customerType: item["customer type"] || 'General',
+          countryOfOrigin: item["country of origin"] || 'Malaysia',
+          category: item["category"] || 'General',
+          bookTitle: item["book title"] || 'Untitled',
+          quantity: parseInt(item["quantity"]) || 0,
+          actualCostPerUnit: parseFloat(item["actual cost per unit (RM)"]) || 0,
+          retailPrice: parseFloat(item["retail price (RM)"]) || 0,
+          totalSales: parseFloat(item["total sales (RM)"]) || 0,
+          totalRevenue: parseFloat(item["total revenue (RM)"]) || 0
+        }));
+
+        filteredData = [...rawData];
+        initFilters();
+        filterData();
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 3rem 0;">Failed to load sales data.</p>`;
+      }
+    }
+
+    function initFilters() {
+      const yearSelect = document.getElementById('year-filter');
+      const catSelect = document.getElementById('category-filter');
+
+      yearSelect.innerHTML = '<option value="ALL">All Years</option>';
+      catSelect.innerHTML = '<option value="ALL">All Categories</option>';
+
+      const years = [...new Set(rawData.map(b => b.year))].filter(y => y !== 'N/A').sort((a,b) => b - a);
+      const categories = [...new Set(rawData.map(b => b.category))].sort();
+
+      years.forEach(yr => {
+        const opt = document.createElement('option');
+        opt.value = yr; opt.textContent = yr;
+        yearSelect.appendChild(opt);
+      });
+
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat; opt.textContent = cat;
+        catSelect.appendChild(opt);
+      });
+    }
+
+    function renderMetrics() {
+      const totalRev = filteredData.reduce((sum, item) => sum + item.totalRevenue, 0);
+      const totalQty = filteredData.reduce((sum, item) => sum + item.quantity, 0);
+
+      document.getElementById('total-revenue').textContent = `RM ${totalRev.toLocaleString('en-MY', {minimumFractionDigits: 2})}`;
+      document.getElementById('total-quantity').textContent = totalQty.toLocaleString();
+      document.getElementById('total-transactions').textContent = filteredData.length;
+
+      const catCounts = {};
+      filteredData.forEach(item => {
+        catCounts[item.category] = (catCounts[item.category] || 0) + item.totalRevenue;
+      });
+
+      let topCat = '-';
+      let maxRev = 0;
+      for (const [cat, rev] of Object.entries(catCounts)) {
+        if (rev > maxRev) { maxRev = rev; topCat = cat; }
+      }
+      document.getElementById('top-category').textContent = topCat;
+    }
+
+    function renderCharts() {
+      const yearStats = {};
+      filteredData.forEach(item => {
+        if (item.year === 'N/A') return;
+        if (!yearStats[item.year]) yearStats[item.year] = { rev: 0, qty: 0 };
+        yearStats[item.year].rev += item.totalRevenue;
+        yearStats[item.year].qty += item.quantity;
+      });
+
+      const years = Object.keys(yearStats).sort((a,b) => a - b);
+      const revData = years.map(y => yearStats[y].rev);
+      const qtyData = years.map(y => yearStats[y].qty);
+
+      // Timeline Chart
+      const ctx1 = document.getElementById('salesTimelineChart').getContext('2d');
+      if (salesChart) salesChart.destroy();
+      salesChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: years,
+          datasets: [
+            { label: 'Revenue (RM)', data: revData, backgroundColor: 'rgba(47, 46, 122, 0.85)' },
+            { label: 'Quantity Sold', data: qtyData, type: 'line', borderColor: '#f47820', backgroundColor: '#f47820' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // Customer Type Chart
+      const custStats = {};
+      filteredData.forEach(item => {
+        custStats[item.customerType] = (custStats[item.customerType] || 0) + 1;
+      });
+
+      const ctx2 = document.getElementById('customerChart').getContext('2d');
+      if (customerChart) customerChart.destroy();
+      customerChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(custStats),
+          datasets: [{
+            data: Object.values(custStats),
+            backgroundColor: ['#2f2e7a', '#f47820', '#72c0e8', '#10b981', '#8b5cf6']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderGrid() {
+      const container = document.getElementById('sales-container');
+      container.innerHTML = '';
+
+      if (filteredData.length === 0) {
+        container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:3rem 0; color:var(--text-muted);">No sales records found.</div>`;
+        return;
+      }
+
+      filteredData.forEach(sale => {
+        const card = document.createElement('div');
+        card.className = 'sale-card';
+        card.innerHTML = `
+          <div>
+            <div class="sale-header">
+              <span class="sale-ref">Ref: ${sale.reference}</span>
+              <span class="sale-date">${sale.dateOfPurchase}</span>
+            </div>
+            <div class="sale-title" onclick="openModal(${sale.id})">${sale.bookTitle}</div>
+            <div class="sale-buyer">Buyer: <strong>${sale.bookBuyer}</strong></div>
+            <div>
+              <span class="tag">${sale.category}</span>
+              <span class="tag">${sale.customerType}</span>
+              <span class="tag">${sale.countryOfOrigin}</span>
+            </div>
+          </div>
+          <div class="sale-financials">
+            <div class="fin-item"><span>Qty Sold</span><strong>${sale.quantity}</strong></div>
+            <div class="fin-item"><span>Total Revenue</span><strong>RM ${sale.totalRevenue.toFixed(2)}</strong></div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openModal(id) {
+      const sale = rawData.find(s => s.id === id);
+      if (!sale) return;
+
+      document.getElementById('modal-title').textContent = sale.bookTitle;
+      document.getElementById('modal-content').innerHTML = `
+        <div class="modal-row"><span>Reference</span><strong>${sale.reference}</strong></div>
+        <div class="modal-row"><span>Date of Purchase</span><strong>${sale.dateOfPurchase}</strong></div>
+        <div class="modal-row"><span>Book Buyer</span><strong>${sale.bookBuyer}</strong></div>
+        <div class="modal-row"><span>Customer Type</span><strong>${sale.customerType}</strong></div>
+        <div class="modal-row"><span>Country of Origin</span><strong>${sale.countryOfOrigin}</strong></div>
+        <div class="modal-row"><span>Category</span><strong>${sale.category}</strong></div>
+        <div class="modal-row"><span>Quantity Sold</span><strong>${sale.quantity} units</strong></div>
+        <div class="modal-row"><span>Actual Cost / Unit</span><strong>RM ${sale.actualCostPerUnit.toFixed(2)}</strong></div>
+        <div class="modal-row"><span>Retail Price / Unit</span><strong>RM ${sale.retailPrice.toFixed(2)}</strong></div>
+        <div class="modal-row"><span>Total Sales</span><strong>RM ${sale.totalSales.toFixed(2)}</strong></div>
+        <div class="modal-row" style="color: var(--orange-vibrant);"><span>Total Revenue</span><strong>RM ${sale.totalRevenue.toFixed(2)}</strong></div>
+      `;
+
+      document.getElementById('sale-modal').classList.add('active');
+    }
+
+    function hideModal() { document.getElementById('sale-modal').classList.remove('active'); }
+    function closeModal(e) { if (e.target.classList.contains('modal-overlay')) hideModal(); }
+
+    function filterData() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const yr = document.getElementById('year-filter').value;
+      const cat = document.getElementById('category-filter').value;
+      const sort = document.getElementById('sort-filter').value;
+
+      filteredData = rawData.filter(item => {
+        const matchesQuery = item.bookTitle.toLowerCase().includes(q) ||
+                             item.bookBuyer.toLowerCase().includes(q) ||
+                             item.reference.toLowerCase().includes(q) ||
+                             item.countryOfOrigin.toLowerCase().includes(q);
+        const matchesYear = (yr === 'ALL') || (item.year.toString() === yr);
+        const matchesCategory = (cat === 'ALL') || (item.category === cat);
+        return matchesQuery && matchesYear && matchesCategory;
+      });
+
+      filteredData.sort((a,b) => {
+        if (sort === 'NEWEST') return new Date(b.dateOfPurchase) - new Date(a.dateOfPurchase);
+        if (sort === 'OLDEST') return new Date(a.dateOfPurchase) - new Date(b.dateOfPurchase);
+        if (sort === 'REV_DESC') return b.totalRevenue - a.totalRevenue;
+        if (sort === 'QTY_DESC') return b.quantity - a.quantity;
+        return 0;
+      });
+
+      renderMetrics();
+      renderCharts();
+      renderGrid();
+    }
+
+    function clearSearch() { document.getElementById('search-input').value = ''; filterData(); }
+    function resetAllFilters() {
+      document.getElementById('search-input').value = '';
+      document.getElementById('year-filter').value = 'ALL';
+      document.getElementById('category-filter').value = 'ALL';
+      document.getElementById('sort-filter').value = 'NEWEST';
+      filterData();
+    }
+
+    document.getElementById('search-input').addEventListener('input', filterData);
+    document.getElementById('year-filter').addEventListener('change', filterData);
+    document.getElementById('category-filter').addEventListener('change', filterData);
+    document.getElementById('sort-filter').addEventListener('change', filterData);
+
+    loadSalesData();
+  </script>
+</body>
+</html>
