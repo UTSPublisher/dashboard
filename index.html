@@ -207,41 +207,6 @@
             transform: translateX(4px);
         }
 
-        /* Disabled / Coming Soon Card */
-        .coming-soon {
-            border-top-color: var(--border-color);
-            opacity: 0.8;
-            cursor: default;
-        }
-
-        .coming-soon:hover {
-            border-top-color: var(--border-color);
-            transform: none;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-        }
-
-        .coming-soon .card-icon {
-            background: #f1f5f9;
-            color: var(--text-muted);
-        }
-
-        .coming-soon:hover .card-icon {
-            background: #f1f5f9;
-            color: var(--text-muted);
-        }
-
-        .badge {
-            display: inline-block;
-            margin-left: 8px;
-            padding: 2px 8px;
-            border-radius: 12px;
-            background: #e2e8f0;
-            color: var(--text-muted);
-            font-size: 11px;
-            font-weight: 600;
-            vertical-align: middle;
-        }
-
         /* Info Box */
         .info-box {
             background: #ffffff;
@@ -302,6 +267,7 @@
         <section>
             <h2 class="section-title">Books Data</h2>
             <div class="cards">
+                <!-- Book Citations & Downloads Card -->
                 <a href="books-data/" class="card" id="books-data-card">
                     <div>
                         <div class="card-icon">📚</div>
@@ -311,14 +277,15 @@
                     <span class="card-action">View Books Data →</span>
                 </a>
 
-                <div class="card coming-soon">
+                <!-- Book Sales Card (Activated) -->
+                <a href="book-sales/" class="card" id="book-sales-card">
                     <div>
                         <div class="card-icon">💰</div>
-                        <h3>Book Sales <span class="badge">Coming Soon</span></h3>
+                        <h3>Book Sales</h3>
                         <p>View sales information and statistics for UTS Publisher books.</p>
                     </div>
-                    <span class="card-action" style="background: #d8f2fd; color: #94a3b8; pointer-events: none;">View Book Sales →</span>
-                </div>
+                    <span class="card-action">View Book Sales →</span>
+                </a>
             </div>
         </section>
 
@@ -332,12 +299,21 @@
         UTS Publisher · University of Technology Sarawak
     </footer>
 
-    <!-- Optimization Script: Wakes up Google Apps Script when hovering over card -->
+    <!-- Optimization Script: Wakes up Apps Script when hovering over cards -->
     <script>
+        // Pre-warm Books Data script
         const booksCard = document.getElementById('books-data-card');
         if (booksCard) {
             booksCard.addEventListener('mouseenter', () => {
                 fetch("https://script.google.com/macros/s/AKfycbx_Kko2BCClwaUqvXjpClDatQuhmhY-LnwBVO38wg7yk5NTWd8sMX_Ni6OHijbwpKii/exec", { mode: 'no-cors' });
+            });
+        }
+
+        // Pre-warm Book Sales script (REPLACE WITH YOUR NEW APPS SCRIPT WEB APP URL)
+        const salesCard = document.getElementById('book-sales-card');
+        if (salesCard) {
+            salesCard.addEventListener('mouseenter', () => {
+                fetch("https://script.google.com/macros/s/AKfycbx7hCwlPq2CDdNTmjcvqTfEmpW_x-hM47n_OS9YDyukqMh9Yd8EhjOtrxX1dq-bKNUx/exec", { mode: 'no-cors' });
             });
         }
     </script>
