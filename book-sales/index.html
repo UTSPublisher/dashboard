@@ -544,7 +544,7 @@
 
     // Pagination Settings
     let currentPage = 1;
-    const itemsPerPage = 15;
+    const itemsPerPage = 16; // Updated to 16 items per page
 
     // Helper: Safely retrieve row value checking lowercase keys
     function getVal(item, keys, fallback = '') {
@@ -581,6 +581,19 @@
       return isNaN(fallback) ? new Date(0) : fallback;
     }
 
+    // Helper to format ISO timestamps cleanly as YYYY-MM-DD
+    function formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      const d = parseDate(dateStr);
+      if (isNaN(d.getTime()) || d.getTime() === 0) return String(dateStr).split('T')[0];
+      
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    }
+
     function formatCurrency(val) {
       return 'RM ' + Number(val || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -591,13 +604,14 @@
         const data = await response.json();
         
         rawSalesData = data.map(item => {
-          const dateStr = getVal(item, ['date of purchase', 'date', 'purchase date']);
-          const yrVal = parseInt(getVal(item, ['year'])) || (parseDate(dateStr).getFullYear() || 'N/A');
+          const rawDate = getVal(item, ['date of purchase', 'date', 'purchase date']);
+          const cleanDate = formatDate(rawDate);
+          const yrVal = parseInt(getVal(item, ['year'])) || (parseDate(rawDate).getFullYear() || 'N/A');
 
           return {
             year: yrVal,
-            dateOfPurchase: dateStr || 'N/A',
-            parsedDate: parseDate(dateStr),
+            dateOfPurchase: cleanDate,
+            parsedDate: parseDate(rawDate),
             reference: getVal(item, ['reference', 'ref'], 'N/A'),
             buyerName: getVal(item, ['book buyer', 'buyer', 'customer'], 'Unknown Buyer'),
             customerType: getVal(item, ['customer type', 'type'], 'General'),
