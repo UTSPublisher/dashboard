@@ -452,7 +452,7 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx7hCwlPq2CDdNTmjcvqTfEmpW_x-hM47n_OS9YDyukqMh9Yd8EhjOtrxX1dq-bKNUx/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzmpMfy5P4deuMqADE4u3LvEJaXsBV4mXtzxzKlG_fZpsG_8HemS0BCI_iV1aYxxla/exec";
 
     let rawSalesData = [];
     let filteredSalesData = [];
@@ -698,16 +698,16 @@
       document.getElementById('modal-title').innerText = item.bookTitle;
       document.getElementById('modal-content').innerHTML = `
         <div class="modal-body-row"><span>Reference</span><span>${item.reference}</span></div>
-        <div class="modal-body-row"><span>Date of Purchase</span><span>${item.dateOfPurchase}</span></div>
-        <div class="modal-body-row"><span>Book Buyer</span><span>${item.buyerName}</span></div>
-        <div class="modal-body-row"><span>Customer Type</span><span>${item.customerType}</span></div>
-        <div class="modal-body-row"><span>Country of Origin</span><span>${item.countryOfOrigin}</span></div>
+        <div class="modal-body-row"><span>Date of Purchase</span><span>${item.dateofpurchase}</span></div>
+        <div class="modal-body-row"><span>Book Buyer</span><span>${item.buyername}</span></div>
+        <div class="modal-body-row"><span>Customer Type</span><span>${item.customertype}</span></div>
+        <div class="modal-body-row"><span>Country of Origin</span><span>${item.countryoforigin}</span></div>
         <div class="modal-body-row"><span>Category</span><span>${item.category}</span></div>
         <div class="modal-body-row"><span>Quantity Sold</span><span>${item.quantity} units</span></div>
-        <div class="modal-body-row"><span>Actual Cost / Unit</span><span>${formatCurrency(item.actualCostPerUnit)}</span></div>
-        <div class="modal-body-row"><span>Retail Price / Unit</span><span>${formatCurrency(item.retailPrice)}</span></div>
-        <div class="modal-body-row"><span>Total Sales</span><span>${formatCurrency(item.totalSales)}</span></div>
-        <div class="modal-body-row"><span>Total Revenue</span><span style="color: var(--primary);">${formatCurrency(item.totalRevenue)}</span></div>
+        <div class="modal-body-row"><span>Actual Cost / Unit</span><span>${formatCurrency(item.actualcostperunit)}</span></div>
+        <div class="modal-body-row"><span>Retail Price / Unit</span><span>${formatCurrency(item.retailprice)}</span></div>
+        <div class="modal-body-row"><span>Total Sales</span><span>${formatCurrency(item.totalsales)}</span></div>
+        <div class="modal-body-row"><span>Total Revenue</span><span style="color: var(--primary);">${formatCurrency(item.totalrevenue)}</span></div>
       `;
 
       document.getElementById('sale-modal').classList.add('active');
