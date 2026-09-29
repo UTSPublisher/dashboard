@@ -34,9 +34,8 @@
       background-color: var(--bg-slate);
       color: var(--text-main);
       padding: 24px;
-      width: 100%;
-      max-width: 100%;
-      margin: 0;
+      max-width: 1400px;
+      margin: 0 auto;
     }
 
     header {
@@ -137,7 +136,7 @@
     /* KPI Grid */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -174,7 +173,7 @@
     }
 
     .kpi-details h3 {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 700;
       margin-top: 2px;
     }
@@ -182,7 +181,7 @@
     /* Analytics Charts Section */
     .charts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: 2fr 1fr 1fr;
       gap: 20px;
       margin-bottom: 24px;
     }
@@ -290,8 +289,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
+    }
+
+    .sale-card .card-footer-amounts {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
     }
 
     /* Pagination Controls */
@@ -449,9 +454,16 @@
   <!-- KPIs -->
   <div class="kpi-grid">
     <div class="kpi-card">
+      <div class="kpi-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+      <div class="kpi-details">
+        <span>Total Sales</span>
+        <h3 id="kpi-sales">RM 0.00</h3>
+      </div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-icon"><i class="fa-solid fa-dollar-sign"></i></div>
       <div class="kpi-details">
-        <span>Total Sales Revenue</span>
+        <span>Total Revenue</span>
         <h3 id="kpi-revenue">RM 0.00</h3>
       </div>
     </div>
@@ -545,7 +557,7 @@
 
     // Pagination Settings
     let currentPage = 1;
-    const itemsPerPage = 16; // Updated to 16 items per page
+    const itemsPerPage = 16;
 
     // Helper: Safely retrieve row value checking lowercase keys
     function getVal(item, keys, fallback = '') {
@@ -687,11 +699,13 @@
     }
 
     function updateKPIs() {
+      let totalSalesVal = 0;
       let totalRev = 0;
       let totalQty = 0;
       const catCounts = {};
 
       filteredSalesData.forEach(item => {
+        totalSalesVal += item.totalSales;
         totalRev += item.totalRevenue;
         totalQty += item.quantity;
         catCounts[item.category] = (catCounts[item.category] || 0) + item.totalRevenue;
@@ -703,6 +717,7 @@
         if (rev > maxRev) { maxRev = rev; topCat = cat; }
       }
 
+      document.getElementById('kpi-sales').innerText = formatCurrency(totalSalesVal);
       document.getElementById('kpi-revenue').innerText = formatCurrency(totalRev);
       document.getElementById('kpi-copies').innerText = totalQty.toLocaleString();
       document.getElementById('kpi-transactions').innerText = filteredSalesData.length.toLocaleString();
@@ -832,8 +847,11 @@
               </div>
             </div>
             <div class="card-footer">
-              <span>Qty: ${item.quantity}</span>
-              <span style="color: var(--primary);">${formatCurrency(item.totalRevenue)}</span>
+              <span style="font-weight: 600;">Qty: ${item.quantity}</span>
+              <div class="card-footer-amounts">
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Sales: ${formatCurrency(item.totalSales)}</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary);">Rev: ${formatCurrency(item.totalRevenue)}</div>
+              </div>
             </div>
           </div>
         `;
