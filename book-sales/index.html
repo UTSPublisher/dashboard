@@ -181,12 +181,21 @@
     /* Analytics Charts Section */
     .charts-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: 2fr 1fr 1fr;
       gap: 20px;
       margin-bottom: 24px;
     }
 
-    @media (max-width: 992px) {
+    @media (max-width: 1100px) {
+      .charts-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .charts-grid .chart-card:first-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 768px) {
       .charts-grid {
         grid-template-columns: 1fr;
       }
@@ -201,7 +210,7 @@
     }
 
     .chart-card h2 {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 600;
       margin-bottom: 16px;
       color: var(--text-main);
@@ -209,7 +218,7 @@
 
     .chart-container {
       position: relative;
-      height: 300px;
+      height: 280px;
       width: 100%;
     }
 
@@ -218,6 +227,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 20px;
+      margin-bottom: 20px;
     }
 
     .sale-card {
@@ -281,6 +291,56 @@
       align-items: center;
       font-weight: 600;
       font-size: 0.95rem;
+    }
+
+    /* Pagination Controls */
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 14px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      margin-top: 16px;
+    }
+
+    .pagination-info {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .pagination-buttons {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pagination-btn {
+      padding: 8px 14px;
+      border: 1px solid var(--border-color);
+      background-color: #fff;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background-color: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     /* Modal Styling */
@@ -417,7 +477,7 @@
     </div>
   </div>
 
-  <!-- Charts -->
+  <!-- Charts Section -->
   <div class="charts-grid">
     <div class="chart-card">
       <h2>Revenue & Quantity Sold by Year</h2>
@@ -431,11 +491,33 @@
         <canvas id="customerChart"></canvas>
       </div>
     </div>
+    <div class="chart-card">
+      <h2>Sales by Country of Origin</h2>
+      <div class="chart-container">
+        <canvas id="countryChart"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- Sales Cards Grid -->
   <div class="sales-grid" id="sales-grid">
     <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading sales data...</div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="pagination-container" id="pagination-controls">
+    <div class="pagination-info" id="pagination-info">
+      Showing 0 - 0 of 0 transactions
+    </div>
+    <div class="pagination-buttons">
+      <button class="pagination-btn" id="prev-page-btn" disabled>
+        <i class="fa-solid fa-chevron-left"></i> Previous
+      </button>
+      <span id="page-indicator" style="font-size: 0.9rem; font-weight: 600; padding: 0 8px;">Page 1 of 1</span>
+      <button class="pagination-btn" id="next-page-btn" disabled>
+        Next <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
   </div>
 
   <!-- Detail Modal -->
@@ -446,20 +528,25 @@
         <button class="modal-close" id="modal-close-btn">&times;</button>
       </div>
       <div id="modal-content">
-        <!-- Dynamic fields populates here -->
+        <!-- Dynamic fields populate here -->
       </div>
     </div>
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzmpMfy5P4deuMqADE4u3LvEJaXsBV4mXtzxzKlG_fZpsG_8HemS0BCI_iV1aYxxla/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx7hCwlPq2CDdNTmjcvqTfEmpW_x-hM47n_OS9YDyukqMh9Yd8EhjOtrxX1dq-bKNUx/exec";
 
     let rawSalesData = [];
     let filteredSalesData = [];
     let salesChartInstance = null;
     let customerChartInstance = null;
+    let countryChartInstance = null;
 
-    // Helper: Safely retrieve row value by checking multiple potential lower-case header names
+    // Pagination Settings
+    let currentPage = 1;
+    const itemsPerPage = 15;
+
+    // Helper: Safely retrieve row value checking lowercase keys
     function getVal(item, keys, fallback = '') {
       for (let k of keys) {
         if (item[k] !== undefined && item[k] !== null && item[k] !== '') {
@@ -503,7 +590,6 @@
         const response = await fetch(WEB_APP_URL);
         const data = await response.json();
         
-        // Exact mapping to match lowercase headers from your Apps Script!
         rawSalesData = data.map(item => {
           const dateStr = getVal(item, ['date of purchase', 'date', 'purchase date']);
           const yrVal = parseInt(getVal(item, ['year'])) || (parseDate(dateStr).getFullYear() || 'N/A');
@@ -574,7 +660,11 @@
         return matchesQuery && matchesYear && matchesCategory;
       });
 
+      // Sort latest sales first
       filteredSalesData.sort((a, b) => b.parsedDate - a.parsedDate);
+
+      // Reset to first page whenever search/filter parameters change
+      currentPage = 1;
 
       updateKPIs();
       renderCharts();
@@ -605,6 +695,7 @@
     }
 
     function renderCharts() {
+      // 1. Yearly Timeline Chart
       const yearStats = {};
       filteredSalesData.forEach(item => {
         if (item.year === 'N/A' || !item.year) return;
@@ -638,6 +729,7 @@
         }
       });
 
+      // 2. Customer Type Chart
       const custStats = {};
       filteredSalesData.forEach(item => {
         custStats[item.customerType] = (custStats[item.customerType] || 0) + 1;
@@ -656,39 +748,95 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      // 3. Country of Origin Chart
+      const countryStats = {};
+      filteredSalesData.forEach(item => {
+        countryStats[item.countryOfOrigin] = (countryStats[item.countryOfOrigin] || 0) + 1;
+      });
+
+      if (countryChartInstance) countryChartInstance.destroy();
+      const ctxCountry = document.getElementById('countryChart').getContext('2d');
+      countryChartInstance = new Chart(ctxCountry, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(countryStats),
+          datasets: [{
+            data: Object.values(countryStats),
+            backgroundColor: ['#10b981', '#6366f1', '#ec4899', '#f59e0b', '#06b6d4', '#84cc16']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
         }
       });
     }
 
     function renderSalesGrid() {
       const grid = document.getElementById('sales-grid');
-      
-      if (filteredSalesData.length === 0) {
+      const totalItems = filteredSalesData.length;
+
+      if (totalItems === 0) {
         grid.innerHTML = `<div class="loading-spinner">No sales records found.</div>`;
+        updatePagination(0, 0, 0);
         return;
       }
 
-      grid.innerHTML = filteredSalesData.map((item, index) => `
-        <div class="sale-card">
-          <div>
-            <div class="card-header">
-              <div class="book-title" onclick="openModal(${index})">${item.bookTitle}</div>
-              <span class="badge">${item.category}</span>
+      // Calculate slice indices for pagination
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+      const pageItems = filteredSalesData.slice(startIndex, endIndex);
+
+      grid.innerHTML = pageItems.map((item, index) => {
+        const globalIndex = startIndex + index;
+        return `
+          <div class="sale-card">
+            <div>
+              <div class="card-header">
+                <div class="book-title" onclick="openModal(${globalIndex})">${item.bookTitle}</div>
+                <span class="badge">${item.category}</span>
+              </div>
+              <div class="card-body">
+                <div><i class="fa-solid fa-hashtag"></i> Ref: ${item.reference}</div>
+                <div><i class="fa-solid fa-user"></i> Buyer: <strong>${item.buyerName}</strong></div>
+                <div><i class="fa-solid fa-globe"></i> ${item.countryOfOrigin} (${item.customerType})</div>
+                <div><i class="fa-regular fa-calendar"></i> ${item.dateOfPurchase}</div>
+              </div>
             </div>
-            <div class="card-body">
-              <div><i class="fa-solid fa-hashtag"></i> Ref: ${item.reference}</div>
-              <div><i class="fa-solid fa-user"></i> Buyer: <strong>${item.buyerName}</strong></div>
-              <div><i class="fa-solid fa-globe"></i> ${item.countryOfOrigin} (${item.customerType})</div>
-              <div><i class="fa-regular fa-calendar"></i> ${item.dateOfPurchase}</div>
+            <div class="card-footer">
+              <span>Qty: ${item.quantity}</span>
+              <span style="color: var(--primary);">${formatCurrency(item.totalRevenue)}</span>
             </div>
           </div>
-          <div class="card-footer">
-            <span>Qty: ${item.quantity}</span>
-            <span style="color: var(--primary);">${formatCurrency(item.totalRevenue)}</span>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+
+      updatePagination(startIndex + 1, endIndex, totalItems);
+    }
+
+    function updatePagination(start, end, total) {
+      const totalPages = Math.ceil(total / itemsPerPage) || 1;
+      
+      document.getElementById('pagination-info').innerText = 
+        total > 0 ? `Showing ${start} - ${end} of ${total} transactions` : `Showing 0 - 0 of 0 transactions`;
+
+      document.getElementById('page-indicator').innerText = `Page ${currentPage} of ${totalPages}`;
+
+      document.getElementById('prev-page-btn').disabled = currentPage <= 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
     }
 
     function openModal(index) {
@@ -698,16 +846,16 @@
       document.getElementById('modal-title').innerText = item.bookTitle;
       document.getElementById('modal-content').innerHTML = `
         <div class="modal-body-row"><span>Reference</span><span>${item.reference}</span></div>
-        <div class="modal-body-row"><span>Date of Purchase</span><span>${item.dateofpurchase}</span></div>
-        <div class="modal-body-row"><span>Book Buyer</span><span>${item.buyername}</span></div>
-        <div class="modal-body-row"><span>Customer Type</span><span>${item.customertype}</span></div>
-        <div class="modal-body-row"><span>Country of Origin</span><span>${item.countryoforigin}</span></div>
+        <div class="modal-body-row"><span>Date of Purchase</span><span>${item.dateOfPurchase}</span></div>
+        <div class="modal-body-row"><span>Book Buyer</span><span>${item.buyerName}</span></div>
+        <div class="modal-body-row"><span>Customer Type</span><span>${item.customerType}</span></div>
+        <div class="modal-body-row"><span>Country of Origin</span><span>${item.countryOfOrigin}</span></div>
         <div class="modal-body-row"><span>Category</span><span>${item.category}</span></div>
         <div class="modal-body-row"><span>Quantity Sold</span><span>${item.quantity} units</span></div>
-        <div class="modal-body-row"><span>Actual Cost / Unit</span><span>${formatCurrency(item.actualcostperunit)}</span></div>
-        <div class="modal-body-row"><span>Retail Price / Unit</span><span>${formatCurrency(item.retailprice)}</span></div>
-        <div class="modal-body-row"><span>Total Sales</span><span>${formatCurrency(item.totalsales)}</span></div>
-        <div class="modal-body-row"><span>Total Revenue</span><span style="color: var(--primary);">${formatCurrency(item.totalrevenue)}</span></div>
+        <div class="modal-body-row"><span>Actual Cost / Unit</span><span>${formatCurrency(item.actualCostPerUnit)}</span></div>
+        <div class="modal-body-row"><span>Retail Price / Unit</span><span>${formatCurrency(item.retailPrice)}</span></div>
+        <div class="modal-body-row"><span>Total Sales</span><span>${formatCurrency(item.totalSales)}</span></div>
+        <div class="modal-body-row"><span>Total Revenue</span><span style="color: var(--primary);">${formatCurrency(item.totalRevenue)}</span></div>
       `;
 
       document.getElementById('sale-modal').classList.add('active');
@@ -734,6 +882,25 @@
       document.getElementById('year-filter').addEventListener('change', filterData);
       document.getElementById('category-filter').addEventListener('change', filterData);
 
+      // Pagination Controls
+      document.getElementById('prev-page-btn').addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderSalesGrid();
+          window.scrollTo({ top: document.getElementById('sales-grid').offsetTop - 20, behavior: 'smooth' });
+        }
+      });
+
+      document.getElementById('next-page-btn').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredSalesData.length / itemsPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderSalesGrid();
+          window.scrollTo({ top: document.getElementById('sales-grid').offsetTop - 20, behavior: 'smooth' });
+        }
+      });
+
+      // Modal Controls
       document.getElementById('modal-close-btn').addEventListener('click', () => {
         document.getElementById('sale-modal').classList.remove('active');
       });
