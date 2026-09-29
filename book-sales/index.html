@@ -568,7 +568,7 @@
   </div>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx7hCwlPq2CDdNTmjcvqTfEmpW_x-hM47n_OS9YDyukqMh9Yd8EhjOtrxX1dq-bKNUx/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzmpMfy5P4deuMqADE4u3LvEJaXsBV4mXtzxzKlG_fZpsG_8HemS0BCI_iV1aYxxla/exec";
 
     let rawSalesData = [];
     let filteredSalesData = [];
@@ -635,6 +635,9 @@
     async function fetchSalesData() {
       try {
         const response = await fetch(WEB_APP_URL);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
         const data = await response.json();
         
         rawSalesData = data.map(item => {
@@ -666,7 +669,7 @@
         console.error("Error fetching data:", err);
         document.getElementById('sales-grid').innerHTML = `
           <div class="loading-spinner" style="color: #ef4444;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load sales data.
+            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load sales data. Please check Apps Script access permissions.
           </div>`;
       }
     }
