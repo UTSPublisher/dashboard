@@ -77,6 +77,17 @@
       margin-top: 2px;
     }
 
+    /* Header Badge Styling */
+    header .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: rgba(47, 46, 122, 0.1);
+      color: var(--blue-primary);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
     /* Controls Bar */
     .controls-card {
       background: var(--card-bg);
@@ -468,16 +479,16 @@
 </head>
 <body>
 
-    <header>
-      <div class="header-brand">
-        <img src="../logo.png?v=2" alt="UTS Logo" class="header-logo" onerror="this.style.display='none'">
-        <div>
-          <h1>UTS Publisher Dashboard</h1>
-          <p>Book Citations & Downloads Record</p>
-        </div>
+  <header>
+    <div class="brand-container">
+      <img src="../logo.png?v=2" alt="UTS Logo" class="brand-logo" onerror="this.style.display='none'">
+      <div class="title-area">
+        <h1>UTS Publisher Dashboard</h1>
+        <p>Book Citations & Downloads Record</p>
       </div>
-      <span class="badge">Live Dataset</span>
-    </header>
+    </div>
+    <span class="badge">Live Dataset</span>
+  </header>
 
   <!-- Controls -->
   <div class="controls-card">
