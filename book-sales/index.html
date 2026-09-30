@@ -20,7 +20,7 @@
       --bg-main: #f8fafc;
       --card-bg: #ffffff;
       --book-card-bg: #eef6fc; /* Super Light Blue for Book Cards */
-      --book-card-hover: #e2f0fd; /* Slightly deeper blue tint on hover */
+      --book-card-hover: #e2f0fd;
       --text-dark: #1e293b;
       --text-muted: #64748b;
       --border-color: #cbd5e1;
@@ -51,7 +51,6 @@
       margin-bottom: 24px;
     }
 
-    /* Brand Container for Logo & Title */
     .brand-container {
       display: flex;
       align-items: center;
@@ -77,7 +76,6 @@
       margin-top: 2px;
     }
 
-    /* Header Badge Styling */
     header .badge {
       display: inline-block;
       padding: 6px 12px;
@@ -154,7 +152,7 @@
       flex-wrap: wrap;
     }
 
-    .filter-group select {
+    .filter-group select, .view-btn {
       padding: 10px 14px;
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -166,14 +164,16 @@
       transition: border-color 0.2s;
     }
 
-    .filter-group select:focus {
+    .view-btn.active {
+      background-color: var(--blue-primary);
+      color: white;
       border-color: var(--blue-primary);
     }
 
     /* KPI Grid */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -199,6 +199,11 @@
       align-items: center;
       justify-content: center;
       font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .kpi-details {
+      overflow: hidden;
     }
 
     .kpi-details span {
@@ -210,10 +215,19 @@
     }
 
     .kpi-details h3 {
-      font-size: 1.3rem;
+      font-size: 1.15rem;
       font-weight: 700;
       margin-top: 2px;
       color: var(--text-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-subtext {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
 
     /* Analytics Charts Section */
@@ -225,26 +239,14 @@
     }
 
     @media (max-width: 1100px) {
-      .charts-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-      .charts-grid .chart-card:first-child {
-        grid-column: 1 / -1;
-      }
+      .charts-grid { grid-template-columns: 1fr 1fr; }
+      .charts-grid .chart-card:first-child { grid-column: 1 / -1; }
     }
 
     @media (max-width: 768px) {
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-      .brand-logo {
-        height: 48px;
-      }
+      .charts-grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .brand-logo { height: 48px; }
     }
 
     .chart-card {
@@ -266,6 +268,19 @@
       position: relative;
       height: 280px;
       width: 100%;
+    }
+
+    /* Section Title */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-header h2 {
+      font-size: 1.2rem;
+      color: var(--blue-primary);
     }
 
     /* Sales Item Cards Grid */
@@ -345,6 +360,40 @@
       flex-direction: column;
       align-items: flex-end;
       gap: 2px;
+    }
+
+    /* Aggregated Table Styling */
+    .aggregated-table-container {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    .aggregated-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .aggregated-table th {
+      background-color: var(--bg-main);
+      color: var(--blue-primary);
+      padding: 14px 16px;
+      font-weight: 600;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .aggregated-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .aggregated-table tr:hover {
+      background-color: var(--book-card-bg);
     }
 
     /* Pagination Controls */
@@ -494,7 +543,7 @@
   <div class="controls-card">
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass fa-search"></i>
-      <input type="text" id="search-input" placeholder="Search title, buyer, reference, country...">
+      <input type="text" id="search-input" placeholder="Search book title, buyer name, reference, country...">
       <button class="clear-btn" id="clear-search-btn" title="Clear Search">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -506,6 +555,12 @@
       <select id="category-filter">
         <option value="ALL">All Categories</option>
       </select>
+      <button class="view-btn active" id="btn-view-cards" title="Transaction View">
+        <i class="fa-solid fa-th-large"></i> Transactions
+      </button>
+      <button class="view-btn" id="btn-view-table" title="Aggregated Book Sales View">
+        <i class="fa-solid fa-book-open"></i> Book Summary
+      </button>
     </div>
   </div>
 
@@ -532,18 +587,22 @@
         <h3 id="kpi-copies">0</h3>
       </div>
     </div>
+    <!-- REPLACED KPI 4: TOP BOOK SOLD -->
     <div class="kpi-card">
-      <div class="kpi-icon"><i class="fa-solid fa-receipt"></i></div>
+      <div class="kpi-icon"><i class="fa-solid fa-trophy"></i></div>
       <div class="kpi-details">
-        <span>Total Transactions</span>
-        <h3 id="kpi-transactions">0</h3>
+        <span>Top Book Sold</span>
+        <h3 id="kpi-top-book" title="-">-</h3>
+        <div class="kpi-subtext" id="kpi-top-book-sub">0 copies sold</div>
       </div>
     </div>
+    <!-- REPLACED KPI 5: TOP BUYER -->
     <div class="kpi-card">
-      <div class="kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+      <div class="kpi-icon"><i class="fa-solid fa-user-tie"></i></div>
       <div class="kpi-details">
-        <span>Top Category</span>
-        <h3 id="kpi-top-category">-</h3>
+        <span>Top Buyer</span>
+        <h3 id="kpi-top-buyer" title="-">-</h3>
+        <div class="kpi-subtext" id="kpi-top-buyer-sub">RM 0.00 spent</div>
       </div>
     </div>
   </div>
@@ -570,15 +629,22 @@
     </div>
   </div>
 
-  <!-- Sales Cards Grid -->
-  <div class="sales-grid" id="sales-grid">
-    <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading sales data...</div>
+  <!-- Section Header -->
+  <div class="section-header">
+    <h2 id="view-title">Transaction Records</h2>
+  </div>
+
+  <!-- Container for Card View & Aggregated Summary View -->
+  <div id="content-container">
+    <div class="sales-grid" id="sales-grid">
+      <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading sales data...</div>
+    </div>
   </div>
 
   <!-- Pagination Controls -->
   <div class="pagination-container" id="pagination-controls">
     <div class="pagination-info" id="pagination-info">
-      Showing 0 - 0 of 0 transactions
+      Showing 0 - 0 of 0 records
     </div>
     <div class="pagination-buttons">
       <button class="pagination-btn" id="prev-page-btn" disabled>
@@ -609,9 +675,13 @@
 
     let rawSalesData = [];
     let filteredSalesData = [];
+    let aggregatedBookData = [];
     let salesChartInstance = null;
     let customerChartInstance = null;
     let countryChartInstance = null;
+
+    // View state: 'cards' or 'summary'
+    let currentView = 'cards';
 
     // Pagination Settings
     let currentPage = 1;
@@ -652,7 +722,6 @@
       return isNaN(fallback) ? new Date(0) : fallback;
     }
 
-    // Helper to format ISO timestamps cleanly as YYYY-MM-DD
     function formatDate(dateStr) {
       if (!dateStr) return 'N/A';
       const d = parseDate(dateStr);
@@ -704,9 +773,9 @@
         filterData();
       } catch (err) {
         console.error("Error fetching data:", err);
-        document.getElementById('sales-grid').innerHTML = `
+        document.getElementById('content-container').innerHTML = `
           <div class="loading-spinner" style="color: #ef4444;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load sales data. Please check Apps Script access permissions.
+            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load sales data. Please check Apps Script permissions.
           </div>`;
       }
     }
@@ -751,38 +820,94 @@
       // Sort latest sales first
       filteredSalesData.sort((a, b) => b.parsedDate - a.parsedDate);
 
-      // Reset to first page whenever search/filter parameters change
+      // Group data by title for aggregated summary view
+      buildAggregatedBookData();
+
       currentPage = 1;
 
       updateKPIs();
       renderCharts();
-      renderSalesGrid();
+      renderCurrentView();
+    }
+
+    function buildAggregatedBookData() {
+      const map = {};
+      filteredSalesData.forEach(item => {
+        const title = item.bookTitle;
+        if (!map[title]) {
+          map[title] = {
+            bookTitle: title,
+            category: item.category,
+            totalQty: 0,
+            totalSales: 0,
+            totalRevenue: 0,
+            transactionsCount: 0
+          };
+        }
+        map[title].totalQty += item.quantity;
+        map[title].totalSales += item.totalSales;
+        map[title].totalRevenue += item.totalRevenue;
+        map[title].transactionsCount += 1;
+      });
+
+      aggregatedBookData = Object.values(map).sort((a, b) => b.totalQty - a.totalQty);
     }
 
     function updateKPIs() {
       let totalSalesVal = 0;
       let totalRev = 0;
       let totalQty = 0;
-      const catCounts = {};
+
+      const bookQtyMap = {};
+      const buyerRevMap = {};
 
       filteredSalesData.forEach(item => {
         totalSalesVal += item.totalSales;
         totalRev += item.totalRevenue;
         totalQty += item.quantity;
-        catCounts[item.category] = (catCounts[item.category] || 0) + item.totalRevenue;
+
+        // Calculate book sales count
+        bookQtyMap[item.bookTitle] = (bookQtyMap[item.bookTitle] || 0) + item.quantity;
+
+        // Calculate buyer spent revenue
+        buyerRevMap[item.buyerName] = (buyerRevMap[item.buyerName] || 0) + item.totalRevenue;
       });
 
-      let topCat = '-';
-      let maxRev = 0;
-      for (const [cat, rev] of Object.entries(catCounts)) {
-        if (rev > maxRev) { maxRev = rev; topCat = cat; }
+      // Find Top Book Sold
+      let topBook = '-';
+      let maxBookQty = 0;
+      for (const [title, qty] of Object.entries(bookQtyMap)) {
+        if (qty > maxBookQty) {
+          maxBookQty = qty;
+          topBook = title;
+        }
+      }
+
+      // Find Top Buyer
+      let topBuyer = '-';
+      let maxBuyerRev = 0;
+      for (const [buyer, rev] of Object.entries(buyerRevMap)) {
+        if (rev > maxBuyerRev) {
+          maxBuyerRev = rev;
+          topBuyer = buyer;
+        }
       }
 
       document.getElementById('kpi-sales').innerText = formatCurrency(totalSalesVal);
       document.getElementById('kpi-revenue').innerText = formatCurrency(totalRev);
       document.getElementById('kpi-copies').innerText = totalQty.toLocaleString();
-      document.getElementById('kpi-transactions').innerText = filteredSalesData.length.toLocaleString();
-      document.getElementById('kpi-top-category').innerText = topCat;
+
+      // Set Top Book
+      const elTopBook = document.getElementById('kpi-top-book');
+      elTopBook.innerText = topBook;
+      elTopBook.title = topBook;
+      document.getElementById('kpi-top-book-sub').innerText = `${maxBookQty.toLocaleString()} copies sold`;
+
+      // Set Top Buyer
+      const elTopBuyer = document.getElementById('kpi-top-buyer');
+      elTopBuyer.innerText = topBuyer;
+      elTopBuyer.title = topBuyer;
+      document.getElementById('kpi-top-buyer-sub').innerText = `${formatCurrency(maxBuyerRev)} spent`;
     }
 
     function renderCharts() {
@@ -873,25 +998,34 @@
       });
     }
 
+    function renderCurrentView() {
+      if (currentView === 'cards') {
+        document.getElementById('view-title').innerText = 'Transaction Records';
+        renderSalesGrid();
+      } else {
+        document.getElementById('view-title').innerText = 'Aggregated Book Sales Summary';
+        renderAggregatedTable();
+      }
+    }
+
     function renderSalesGrid() {
-      const grid = document.getElementById('sales-grid');
+      const container = document.getElementById('content-container');
       const totalItems = filteredSalesData.length;
 
       if (totalItems === 0) {
-        grid.innerHTML = `<div class="loading-spinner">No sales records found.</div>`;
+        container.innerHTML = `<div class="loading-spinner">No matching sales records found.</div>`;
         updatePagination(0, 0, 0);
         return;
       }
 
-      // Calculate slice indices for pagination
-      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
       if (currentPage > totalPages) currentPage = totalPages;
 
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
       const pageItems = filteredSalesData.slice(startIndex, endIndex);
 
-      grid.innerHTML = pageItems.map((item, index) => {
+      const cardsHtml = pageItems.map((item, index) => {
         const globalIndex = startIndex + index;
         return `
           <div class="sale-card">
@@ -918,6 +1052,60 @@
         `;
       }).join('');
 
+      container.innerHTML = `<div class="sales-grid">${cardsHtml}</div>`;
+      updatePagination(startIndex + 1, endIndex, totalItems);
+    }
+
+    function renderAggregatedTable() {
+      const container = document.getElementById('content-container');
+      const totalItems = aggregatedBookData.length;
+
+      if (totalItems === 0) {
+        container.innerHTML = `<div class="loading-spinner">No books found matching your search.</div>`;
+        updatePagination(0, 0, 0);
+        return;
+      }
+
+      const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+      const pageItems = aggregatedBookData.slice(startIndex, endIndex);
+
+      const rowsHtml = pageItems.map((item, idx) => `
+        <tr>
+          <td><strong>${startIndex + idx + 1}</strong></td>
+          <td><strong style="color: var(--blue-primary);">${item.bookTitle}</strong></td>
+          <td><span class="badge">${item.category}</span></td>
+          <td><strong>${item.totalQty.toLocaleString()}</strong> units</td>
+          <td>${formatCurrency(item.totalSales)}</td>
+          <td style="font-weight:700; color:var(--blue-primary);">${formatCurrency(item.totalRevenue)}</td>
+          <td>${item.transactionsCount} order(s)</td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = `
+        <div class="aggregated-table-container">
+          <table class="aggregated-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Book Title</th>
+                <th>Category</th>
+                <th>Total Sold (Units)</th>
+                <th>Total Sales</th>
+                <th>Total Revenue</th>
+                <th>Orders</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+
       updatePagination(startIndex + 1, endIndex, totalItems);
     }
 
@@ -925,7 +1113,7 @@
       const totalPages = Math.ceil(total / itemsPerPage) || 1;
       
       document.getElementById('pagination-info').innerText = 
-        total > 0 ? `Showing ${start} - ${end} of ${total} transactions` : `Showing 0 - 0 of 0 transactions`;
+        total > 0 ? `Showing ${start} - ${end} of ${total} records` : `Showing 0 - 0 of 0 records`;
 
       document.getElementById('page-indicator').innerText = `Page ${currentPage} of ${totalPages}`;
 
@@ -976,21 +1164,42 @@
       document.getElementById('year-filter').addEventListener('change', filterData);
       document.getElementById('category-filter').addEventListener('change', filterData);
 
+      // View Switchers
+      const btnCards = document.getElementById('btn-view-cards');
+      const btnTable = document.getElementById('btn-view-table');
+
+      btnCards.addEventListener('click', () => {
+        currentView = 'cards';
+        btnCards.classList.add('active');
+        btnTable.classList.remove('active');
+        currentPage = 1;
+        renderCurrentView();
+      });
+
+      btnTable.addEventListener('click', () => {
+        currentView = 'summary';
+        btnTable.classList.add('active');
+        btnCards.classList.remove('active');
+        currentPage = 1;
+        renderCurrentView();
+      });
+
       // Pagination Controls
       document.getElementById('prev-page-btn').addEventListener('click', () => {
         if (currentPage > 1) {
           currentPage--;
-          renderSalesGrid();
-          window.scrollTo({ top: document.getElementById('sales-grid').offsetTop - 20, behavior: 'smooth' });
+          renderCurrentView();
+          window.scrollTo({ top: document.getElementById('content-container').offsetTop - 20, behavior: 'smooth' });
         }
       });
 
       document.getElementById('next-page-btn').addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredSalesData.length / itemsPerPage);
+        const dataLength = currentView === 'cards' ? filteredSalesData.length : aggregatedBookData.length;
+        const totalPages = Math.ceil(dataLength / itemsPerPage);
         if (currentPage < totalPages) {
           currentPage++;
-          renderSalesGrid();
-          window.scrollTo({ top: document.getElementById('sales-grid').offsetTop - 20, behavior: 'smooth' });
+          renderCurrentView();
+          window.scrollTo({ top: document.getElementById('content-container').offsetTop - 20, behavior: 'smooth' });
         }
       });
 
