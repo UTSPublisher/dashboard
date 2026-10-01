@@ -630,6 +630,7 @@
   <!-- Section Header -->
   <div class="section-header">
     <h2 id="view-title">Transaction Records</h2>
+    <span id="result-count" style="font-size: 0.85rem; color: var(--text-muted);"></span>
   </div>
 
   <!-- Container for Card View & Aggregated Summary View -->
@@ -797,36 +798,66 @@
       });
     }
 
-    function filterData() {
-      const query = document.getElementById('search-input').value.toLowerCase().trim();
-      const selectedYear = document.getElementById('year-filter').value;
-      const selectedCategory = document.getElementById('category-filter').value;
+function filterData() {
+  const query = document.getElementById('search-input').value
+    .toLowerCase()
+    .trim();
 
-      filteredSalesData = rawSalesData.filter(item => {
-        const matchesQuery = 
-          item.bookTitle.toLowerCase().includes(query) ||
-          item.buyerName.toLowerCase().includes(query) ||
-          item.reference.toLowerCase().includes(query) ||
-          item.countryOfOrigin.toLowerCase().includes(query);
+  const selectedYear = document.getElementById('year-filter').value;
+  const selectedCategory = document.getElementById('category-filter').value;
 
-        const matchesYear = (selectedYear === 'ALL') || (item.year.toString() === selectedYear);
-        const matchesCategory = (selectedCategory === 'ALL') || (item.category === selectedCategory);
+  filteredSalesData = rawSalesData.filter(item => {
 
-        return matchesQuery && matchesYear && matchesCategory;
-      });
+    // Search across multiple fields
+    const searchableText = [
+      item.bookTitle,
+      item.buyerName,
+      item.reference,
+      item.countryOfOrigin,
+      item.category,
+      item.customerType
+    ]
+      .join(' ')
+      .toLowerCase();
 
-      // Sort latest sales first
-      filteredSalesData.sort((a, b) => b.parsedDate - a.parsedDate);
+    const matchesQuery =
+      query === '' || searchableText.includes(query);
 
-      // Group data by title for aggregated summary view
-      buildAggregatedBookData();
+    const matchesYear =
+      selectedYear === 'ALL' ||
+      item.year.toString() === selectedYear;
 
-      currentPage = 1;
+    const matchesCategory =
+      selectedCategory === 'ALL' ||
+      item.category === selectedCategory;
 
-      updateKPIs();
-      renderCharts();
-      renderCurrentView();
-    }
+    return matchesQuery && matchesYear && matchesCategory;
+  });
+
+  // Sort latest sales first
+  filteredSalesData.sort((a, b) => b.parsedDate - a.parsedDate);
+
+  // Rebuild aggregated data based ONLY on filtered results
+  buildAggregatedBookData();
+
+  // Always return to page 1 after searching/filtering
+  currentPage = 1;
+
+  // Update everything on the dashboard
+  updateKPIs();
+  renderCharts();
+  renderCurrentView();
+
+const resultCount = document.getElementById('result-count');
+
+if (resultCount) {
+  if (query) {
+    resultCount.innerText =
+      `${filteredSalesData.length} matching record${filteredSalesData.length !== 1 ? 's' : ''}`;
+  } else {
+    resultCount.innerText = '';
+  }
+}
 
     function buildAggregatedBookData() {
       const map = {};
@@ -1143,8 +1174,8 @@
       const searchInput = document.getElementById('search-input');
       const clearBtn = document.getElementById('clear-search-btn');
 
-      searchInput.addEventListener('input', (e) => {
-        if (clearBtn) clearBtn.style.display = e.target.value.trim() ? 'block' : 'none';
+      searchInput.addEventListener('input', function () {const searchValue = this.value.trim();
+        clearBtn.style.display = searchValue ? 'block' : 'none';
         filterData();
       });
 
