@@ -1042,8 +1042,8 @@
             <div class="card-footer">
               <span style="font-weight: 600;">Qty: ${item.quantity}</span>
               <div class="card-footer-amounts">
-                <div style="font-size: 0.75rem; color: var(--text-muted);">Sales: ${formatCurrency(item.totalSales)}</div>
-                <div style="font-size: 0.95rem; font-weight: 700; color: var(--blue-primary);">Rev: ${formatCurrency(item.totalRevenue)}</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: var(--orange-vibrant);">Sales: ${formatCurrency(item.totalSales)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Revenue: ${formatCurrency(item.totalRevenue)}</div>
               </div>
             </div>
           </div>
@@ -1076,8 +1076,8 @@
           <td><strong>${startIndex + idx + 1}</strong></td>
           <td><strong style="color: var(--blue-primary);">${item.bookTitle}</strong></td>
           <td><strong>${item.totalQty.toLocaleString()}</strong> units</td>
-          <td>${formatCurrency(item.totalSales)}</td>
-          <td style="font-weight:700; color:var(--blue-primary);">${formatCurrency(item.totalRevenue)}</td>
+          <td style="font-weight:700; color:var(--orange-vibrant);">${formatCurrency(item.totalSales)}</td>
+          <td>${formatCurrency(item.totalRevenue)}</td>
           <td>${item.transactionsCount} order(s)</td>
         </tr>
       `).join('');
